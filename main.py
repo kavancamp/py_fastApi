@@ -1,9 +1,8 @@
 from typing import Optional
+from xml.dom import INDEX_SIZE_ERR
 from fastapi import FastAPI, Response, status, HTTPException
 from pydantic import BaseModel
 from random import randrange
-
-
 
 app = FastAPI()
 
@@ -23,7 +22,7 @@ def find_post(id):
 def find_index_post(id): 
   #gives index of dict with specific id
   for i, p in enumerate(my_posts):
-    if ['id'] == id: 
+    if p['id'] == id: 
       return i
 
 #@ = decorator
@@ -51,8 +50,26 @@ def get_post(id: int):
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"post with id: {id} was not found")
   return {"post_detail": post}
 
-@app.delete("/posts/{id}")
-def delete_post():
+@app.delete("/posts/{id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_post(id: int):
   index = find_index_post(id)
+  if index == None:
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
+    detail=f"post with id: {id} does not exist")
   my_posts.pop(index)
-  return {'message': 'post was successfully deleted.'}
+  return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@app.put("/posts/{id}")
+def update_post(id: int, post: Post):
+  index = find_index_post(id)
+  print(post)
+
+  if index == None:
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+    detail=f"post with id: {id} does not exist")
+
+  post_dict = post.dict()
+  post_dict['id'] = id
+  my_posts[index] = post_dict
+  return {"data": post_dict}
